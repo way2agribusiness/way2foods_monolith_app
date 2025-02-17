@@ -1,6 +1,6 @@
-'use client'
+'use client';
 import React, { useState, useEffect } from "react";
-import { FaShoppingBasket,FaAward, FaLeaf } from "react-icons/fa";
+import { FaShoppingBasket, FaAward, FaLeaf } from "react-icons/fa";
 import { FaTruckFast } from "react-icons/fa6";
 import { LuMousePointer2 } from "react-icons/lu";
 
@@ -46,13 +46,13 @@ const Carousel = () => {
             </div>
             <button
                 onClick={prevSlide}
-                className=""
+                className="absolute top-1/2 left-0 transform -translate-y-1/2 text-white bg-gray-600 rounded-full p-2"
             >
                 &#10094;
             </button>
             <button
                 onClick={nextSlide}
-                className=""
+                className="absolute top-1/2 right-0 transform -translate-y-1/2 text-white bg-gray-600 rounded-full p-2"
             >
                 &#10095;
             </button>
@@ -60,7 +60,26 @@ const Carousel = () => {
     );
 };
 
+// HeroSection component
 const HeroSection = () => {
+    // Function to scroll to the "How It Works" section
+    // Function to scroll to the "How It Works" section with an offset
+    // Function to scroll to the "How It Works" section with an offset
+    // Function to scroll to the "How It Works" section with an offset
+    const scrollToHowItWorks = () => {
+        const element = document.getElementById("howItWorks");
+        if (element) {
+            const top = element.getBoundingClientRect().top + window.scrollY; // Get the top position of the element
+            const offset = 100; // Adjusted the offset to 100px for a smaller scroll
+            window.scrollTo({
+                top: top - offset, // Scroll position adjusted with the offset
+                behavior: "smooth",
+            });
+        }
+    };
+
+
+
     return (
         <section
             id="hero"
@@ -96,6 +115,7 @@ const HeroSection = () => {
                             </a>
                             <a
                                 href="#"
+                                onClick={scrollToHowItWorks} // OnClick handler to scroll
                                 className="border-2 border-green-700 text-green-700 px-4 py-2 rounded-lg text-sm font-semibold hover:bg-green-50 transition-colors duration-300 flex items-center justify-center"
                             >
                                 <LuMousePointer2 className="mr-2" />
@@ -126,16 +146,16 @@ const HeroSection = () => {
                         </div>
                     </div>
 
-                    {/* Hero Visual Section - Now shown on both mobile and desktop */}
+                    {/* Hero Visual Section */}
                     <div className="w-full lg:w-3/4 relative">
                         <div className="bg-green-100 rounded-full w-full lg:w-[500px] h-[250px] lg:h-[500px] absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 -z-10"></div>
                         <Carousel />
-
                     </div>
                 </div>
             </div>
         </section>
     );
 };
+
 
 export default HeroSection;

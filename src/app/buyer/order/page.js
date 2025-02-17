@@ -4,7 +4,7 @@ import { UserContext } from "@/context/userContext";
 import { MdEdit, MdDelete } from "react-icons/md";
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import Address from '../profile/addressAdd'
+import Address from '../profile/addressAdd';
 import {
   FaCreditCard,
   FaRegCreditCard,
@@ -202,10 +202,16 @@ const OrderPage = () => {
                 ))}
               </div>
             ) : (
-
-              <p className="text-sm text-gray-500">No addresses found. Please add an address.{<Address />}</p>
+              <p className="text-sm text-gray-500">No addresses found. Please add an address.</p>
             )}
           </div>
+
+          {/* Address Form Section */}
+          {editAddressId && (
+            <div className="mt-4">
+              <Address editAddressId={editAddressId} setEditAddressId={setEditAddressId} />
+            </div>
+          )}
 
           {/* Payment Section */}
           <div className="mt-1">
