@@ -10,10 +10,10 @@ import { BsEnvelopeAt } from "react-icons/bs";
 
 const Footer = () => {
     return (
-        <footer id="footer" className="text-xs bg-[#333] text-gray-200 pt-16 pb-8">
+        <footer id="footer" className="text-xs bg-[#333] text-gray-200 pt-16 pb-4">
             <div className="container mx-auto px-4">
                 {/* Footer Top */}
-                <div className="flex flex-wrap justify-between mb-12">
+                <div className="flex flex-wrap justify-between mb-2">
                     {/* Company Info (Way2Foods) */}
                     <div className="w-full sm:w-1/3 mb-8">
                         <h3 className="text-xl font-bold mb-6">Way2Foods</h3>
@@ -171,7 +171,7 @@ const Footer = () => {
 
                 {/* Map Section */}
                 <div>
-                    <div className="mt-6">
+                    <div className="mt-2">
                         <iframe
                             src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3203.9950139343064!2d77.54525550206137!3d13.01582557703085!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3bae3dee4ecb4101%3A0x25bea90d09b46f03!2sWay2Foods!5e1!3m2!1sen!2sin!4v1737520943722!5m2!1sen!2sin"
                             width="100%"  // Responsive width
@@ -187,7 +187,7 @@ const Footer = () => {
                 </div>
 
                 {/* Copyright */}
-                <div className="border-t border-gray-800 pt-8">
+                <div className="border-t border-gray-800 pt-4">
                     <div className="text-center text-gray-400 text-sm">
                         <p>© Way2Foods. All rights reserved.</p>
                     </div>
