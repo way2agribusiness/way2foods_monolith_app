@@ -4,6 +4,7 @@ import { UserContext } from "@/context/userContext";
 import { MdEdit, MdDelete } from "react-icons/md";
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import Address from '../profile/addressAdd'
 import {
   FaCreditCard,
   FaRegCreditCard,
@@ -201,7 +202,8 @@ const OrderPage = () => {
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-gray-500">No addresses found. Please add an address.</p>
+
+              <p className="text-sm text-gray-500">No addresses found. Please add an address.{<Address />}</p>
             )}
           </div>
 
