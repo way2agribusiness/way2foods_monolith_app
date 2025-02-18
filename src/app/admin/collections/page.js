@@ -265,8 +265,8 @@ const AdminProductList = () => {
 
     return (
         <div className="max-w-full">
-            <h2 className="text-xs font-semibold text-center mb-3 text-gray-800">ALL Product List</h2>
-            <div className='text-xs'>
+            <h2 className="text-sm font-semibold text-center mb-3 text-gray-800">ALL Product List</h2>
+            <div className='text-sm'>
                 <ul className='flex justify-end space-x-4'>
                     <li className='flex items-center'>
                         <FaEdit className='mr-2 text-orange-500' /> Edit
@@ -309,7 +309,7 @@ const AdminProductList = () => {
                         </div>
                         <Link
                             href='/admin/addcollections'
-                            className="flex items-center text-xs px-4 py-1 bg-green-600 text-white rounded hover:bg-green-700 transition duration-200 ease-in-out">
+                            className="flex items-center text-sm px-4 py-1 bg-green-600 text-white rounded hover:bg-green-700 transition duration-200 ease-in-out">
                             <span className='text-xl mr-2'>+</span> Add New Product
                         </Link>
 
@@ -467,9 +467,9 @@ const AdminProductList = () => {
 
                 {/* Pagination Controls */}
                 <div className="flex justify-end p-2">
-                    <p className="text-xs mr-2">Page:</p>
+                    <p className="text-sm mr-2">Page:</p>
                     <select
-                        className="py-1 border-2 border-green-600 text-xs rounded outline-none"
+                        className="py-1 border-2 border-green-600 text-sm rounded outline-none"
                         value={currentPage} // Shows the selected value inside the dropdown
                         onChange={(e) => setCurrentPage(Number(e.target.value))} // Updates currentPage state
                     >

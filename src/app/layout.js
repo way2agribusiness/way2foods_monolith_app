@@ -18,7 +18,7 @@ export const metadata = {
   title: "Way2Foods",
   description: "One place solution for all your needs",
   icons: {
-    icon: "/favicon.ico", // Correct path
+    icon: "@public/favicon.ico", // Favicon path
   }
 };
 
