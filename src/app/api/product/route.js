@@ -362,11 +362,11 @@ export async function GET(request) {
         return GET_PRODUCT_BY_ID(request);
     }
 
-      // If the 'slug' parameter is passed, route to GET_PRODUCT_BY_SLUG
-      const productSlug = searchParams.get('slug');
-      if (productSlug) {
-          return GET_PRODUCT_BY_SLUG(request);
-      }
+    // If the 'slug' parameter is passed, route to GET_PRODUCT_BY_SLUG
+    const productSlug = searchParams.get('slug');
+    if (productSlug) {
+        return GET_PRODUCT_BY_SLUG(request);
+    }
 
     // If no 'id' is passed, we route to GET_ALL_PRODUCTS
     return GET_ALL_PRODUCTS(request);

@@ -37,18 +37,18 @@ export const PATCH = async (request) => {
 
         // Update the product's isActive status and set isApproved to false
         const updatedProduct = await Product.findByIdAndUpdate(
-            productId, 
-            { 
-                isActive, 
+            productId,
+            {
+                isActive,
                 isApproved: false  // Ensure isApproved is always false
-            }, 
+            },
             { new: true }
         )
-        .populate('brand categoryID subCategoryID sellerID')  // Populate referenced fields
-        .populate({
-            path: 'sellerID',
-            select: '-password -token'  // Exclude sensitive fields
-        });
+            .populate('brand categoryID subCategoryID sellerID')  // Populate referenced fields
+            .populate({
+                path: 'sellerID',
+                select: '-password -token'  // Exclude sensitive fields
+            });
 
         if (!updatedProduct) {
             return NextResponse.json({ message: 'Product not found or could not be updated' }, { status: 404 });

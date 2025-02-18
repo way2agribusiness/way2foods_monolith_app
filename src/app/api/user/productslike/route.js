@@ -66,8 +66,8 @@ export const GET = async (request) => {
             attempt++;
         }
 
-         // Populate the sellerID with additional seller details (excluding password and token)
-         const populatedProducts = await Product.populate(products, {
+        // Populate the sellerID with additional seller details (excluding password and token)
+        const populatedProducts = await Product.populate(products, {
             path: 'sellerID',
             select: 'role',  // Exclude sensitive fields like password and token
         });

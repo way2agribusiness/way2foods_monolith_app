@@ -53,87 +53,74 @@ const Login = () => {
     return errors;
   };
 
+  // Handle form submission
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setFormErrors({});
+    setError('');
 
-// Handle form submission
-const handleSubmit = async (e) => {
-  e.preventDefault();
-  setFormErrors({});
-  setError('');
+    const errors = validateForm(formData);
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
+      return;
+    }
 
-  const errors = validateForm(formData);
-  if (Object.keys(errors).length > 0) {
-    setFormErrors(errors);
-    return;
-  }
-
-  try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/login`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(formData),
-    });
-
-    const data = await response.json();
-
-    // Dismiss any active toasts before showing a new one
-    toast.dismiss();  // Ensure any existing toasts are dismissed before showing a new one
-
-    if (response.ok) {
-      // Save the token and user data in localStorage
-      localStorage.setItem('token', data.token);  // Save the token
-      resetData();
-
-      // Immediately set the user data in context
-      setUser(data.user); // Set user in context
-
-      // Show success message and store the toast ID
-      const toastId = toast.success(data.message, {
-        autoClose: 3000,  // This will auto-close the toast after 3 seconds
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
       });
 
-      // Wait a moment to ensure the toast has time to close before redirection
-      setTimeout(() => {
-        router.push(redirectTo); // Redirect to the saved destination or default (home)
-      }, 3500);  // Wait 3.5 seconds to allow toast to close first
+      const data = await response.json();
 
-    } else {
-      // In case of an error, dismiss previous toasts and show an error toast
-      toast.error(data.message || 'An error occurred');
+      toast.dismiss();  // Ensure any existing toasts are dismissed before showing a new one
+
+      if (response.ok) {
+        localStorage.setItem('token', data.token);  // Save the token
+        resetData();
+        setUser(data.user); // Set user in context
+
+        const toastId = toast.success(data.message, {
+          autoClose: 3000,  // This will auto-close the toast after 3 seconds
+        });
+
+        setTimeout(() => {
+          router.push(redirectTo); // Redirect to the saved destination or default (home)
+        }, 3500);  // Wait 3.5 seconds to allow toast to close first
+
+      } else {
+        toast.error(data.message || 'An error occurred');
+      }
+    } catch (err) {
+      toast.dismiss();
+      toast.error('An error occurred while sending data');
+      console.error(err);
     }
-  } catch (err) {
-    // Dismiss any existing toasts and show the error toast
-    toast.dismiss();
-    toast.error('An error occurred while sending data');
-    console.error(err);
-  } 
-};
-
-
-
+  };
 
   const resetData = () => {
     setFormData({
       phone: "",
       password: ""
-    })
+    });
   };
 
   return (
-    <div className="flex flex-col lg:flex-row h-[450px]">
-      <div className="lg:w-1/2 w-full flex justify-center items-center bg-yellow-200">
-        <div>
-          <img
-            src="https://res.cloudinary.com/dm71xhdxd/image/upload/v1736414196/Mobile_login-pana_dy2ag6.png"
-            className="w-96 h-70"
-          />
-        </div>
+    <div className="flex flex-col lg:flex-row h-auto lg:h-[450px] bg-gray-100">
+      <div className="lg:w-1/2 w-full flex justify-center items-center bg-yellow-200 p-6 lg:p-12">
+        <img
+          src="https://res.cloudinary.com/dm71xhdxd/image/upload/v1736414196/Mobile_login-pana_dy2ag6.png"
+          className="w-full max-w-xs lg:max-w-md"
+          alt="Login Illustration"
+        />
       </div>
 
-      <div className="lg:w-1/2 w-full flex justify-center items-center p-8">
-        <form onSubmit={handleSubmit} className="space-y-3 w-full max-w-sm mx-auto font-[sans-serif]">
-          <h2 className="text-xl font-semibold text-center mb-4">Sign In</h2>
+      <div className="lg:w-1/2 w-full flex justify-center items-center p-6 lg:p-12">
+        <form onSubmit={handleSubmit} className="space-y-6 w-full max-w-sm mx-auto font-[sans-serif]">
+          <h2 className="text-xl font-semibold text-center mb-6 text-gray-800">Sign In</h2>
 
           <div className="relative">
             <input
@@ -142,10 +129,9 @@ const handleSubmit = async (e) => {
               placeholder="Phone"
               value={formData.phone}
               onChange={handleInputChange}
-              className="w-full px-2 py-2 border-b-2 border-gray-300 focus:outline-none 
-                                    focus:border-b-2 focus:border-yellow-300 placeholder-gray-400 bg-transparent"
+              className="w-full px-4 py-3 border-b-2 border-gray-300 focus:outline-none focus:border-yellow-400 placeholder-gray-400 bg-transparent text-gray-800"
             />
-            <FaPhoneAlt className="absolute right-2 top-2 text-gray-400" />
+            <FaPhoneAlt className="absolute right-3 top-3 text-gray-400" />
             {formErrors.phone && <p className="text-red-500 text-sm">{formErrors.phone}</p>}
           </div>
 
@@ -156,23 +142,21 @@ const handleSubmit = async (e) => {
               placeholder="Password"
               value={formData.password}
               onChange={handleInputChange}
-              className="w-full px-2 py-2 border-b-2 border-gray-300 focus:outline-none 
-                                    focus:border-b-2 focus:border-yellow-300 placeholder-gray-400 bg-transparent"
+              className="w-full px-4 py-3 border-b-2 border-gray-300 focus:outline-none focus:border-yellow-400 placeholder-gray-400 bg-transparent text-gray-800"
             />
             {formErrors.password && <p className="text-red-500 text-sm">{formErrors.password}</p>}
-            <div onClick={togglePasswordVisibility} className="absolute right-2 top-2 cursor-pointer">
+            <div onClick={togglePasswordVisibility} className="absolute right-3 top-3 cursor-pointer">
               {showPassword ? <FaEyeSlash className="text-gray-400" /> : <FaEye className="text-gray-400" />}
             </div>
           </div>
 
-          <div className="flex justify-between">
-            {/* Remember Me Checkbox */}
+          <div className="flex justify-between items-center">
             <div className="flex items-center">
               <input
                 type="checkbox"
                 className="w-4 h-4 text-blue-600 border-gray-300 rounded"
               />
-              <span className="text-gray-400 text-sm ml-2">
+              <span className="text-gray-600 text-sm ml-2">
                 Remember me
               </span>
             </div>
@@ -183,11 +167,11 @@ const handleSubmit = async (e) => {
             </div>
           </div>
 
-          <button type="submit" className="px-6 py-2 w-full bg-green-400 hover:bg-green-500 text-sm text-white mx-auto block">
-            Submit
+          <button type="submit" className="px-6 py-3 w-full bg-green-500 hover:bg-green-600 text-sm text-white rounded-lg transition duration-300">
+            Sign In
           </button>
 
-          <div className="text-sm text-center mt-4">
+          <div className="text-sm text-center mt-4 text-gray-600">
             <span>Don't have an account? </span>
             <Link href="/common/register" className="text-blue-500 hover:text-blue-600 hover:underline">
               Sign Up

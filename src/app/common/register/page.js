@@ -6,8 +6,34 @@ import { toast, ToastContainer } from 'react-toastify';  // Import Toastify
 import 'react-toastify/dist/ReactToastify.css';  // Import Toastify styles
 import { useRouter } from "next/navigation";
 
+// Helper to handle input changes
+const handleInputChange = (e, setFormData) => {
+    const { name, value } = e.target;
+    setFormData((prevFormData) => ({
+        ...prevFormData,
+        [name]: value,
+    }));
+};
+
+// Password toggle component
+const PasswordField = ({ name, value, onChange, showPassword, togglePassword, placeholder, error }) => (
+    <div className="relative w-full">
+        <input
+            type={showPassword ? "text" : "password"}
+            name={name}
+            placeholder={placeholder}
+            value={value}
+            onChange={onChange}
+            className="w-full px-3 py-2 border-b-2 border-gray-300 focus:outline-none focus:border-yellow-300 placeholder-gray-400 bg-transparent"
+        />
+        {error && <p className="text-red-500 text-sm">{error}</p>}
+        <div onClick={togglePassword} className="absolute right-3 top-3 cursor-pointer">
+            {showPassword ? <FaEyeSlash className="text-gray-400" /> : <FaEye className="text-gray-400" />}
+        </div>
+    </div>
+);
+
 const Register = () => {
-    // State for form data
     const [formData, setFormData] = useState({
         firstName: '',
         lastName: '',
@@ -17,41 +43,16 @@ const Register = () => {
         confirmPassword: '',
         role: '',
     });
-
-    // State for handling error messages
     const [showPassword, setShowPassword] = useState(false);
-    const [rememberMe, setRememberMe] = useState(false);
-    const [error, setError] = useState('');
-    const [message, setMessage] = useState('');
-    const [formErrors, setFormErrors] = useState({}); // To store form validation errors
-
-    // Initialize Next.js router
+    const [formErrors, setFormErrors] = useState({});
     const router = useRouter();
 
-    // Toggle password visibility
-    const togglePasswordVisibility = () => {
-        setShowPassword(!showPassword);
-    };
+    const togglePasswordVisibility = () => setShowPassword(!showPassword);
 
-    // Handle form input changes
-    const handleInputChange = (e) => {
-        const { name, value } = e.target;
-        setFormData((prevFormData) => ({
-            ...prevFormData,
-            [name]: value,
-        }));
-    };
-
-    // Handle form submission
     const handleSubmit = async (e) => {
-        e.preventDefault(); // Prevent default form submission
-
-        // Reset form errors
+        e.preventDefault();
         setFormErrors({});
-        setError('');
-        setMessage('');
 
-        // Form validation
         const errors = validateForm(formData);
         if (Object.keys(errors).length > 0) {
             setFormErrors(errors);
@@ -59,7 +60,6 @@ const Register = () => {
         }
 
         try {
-            // Send the data to the API endpoint
             const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/register`, {
                 method: 'POST',
                 headers: {
@@ -68,41 +68,21 @@ const Register = () => {
                 body: JSON.stringify(formData),
             });
 
-            const data = await response.text(); // Read response as text first
-            let parsedData = {};
-
-            if (data) {
-                parsedData = JSON.parse(data); // Parse it to JSON if it's not empty
-            }
-
+            const data = await response.json();
             if (response.ok) {
-                resetData();
-                // If registration is successful
-                toast.success(parsedData.message || 'Registration successful!', {
-                    autoClose: 3000,  // Toast stays for 3 seconds
-                });
-
-                // Wait for the toast to complete (matching the autoClose time) before redirecting
-                setTimeout(() => {
-                    router.push('/common/login');
-                }, 3000);
-                setError('');
+                toast.success(data.message || 'Registration successful!', { autoClose: 3000 });
+                setTimeout(() => router.push('/common/login'), 3000);
             } else {
-                // If there's an error, show error message
-                toast.error(parsedData.message || 'An error occurred');
+                toast.error(data.message || 'An error occurred');
             }
         } catch (err) {
-            setMessage('');
             toast.error('An error occurred while sending data');
             console.error(err);
         }
     };
 
-    // Form validation function
     const validateForm = (data) => {
         const errors = {};
-
-        // Required fields validation
         if (!data.firstName) errors.firstName = "First name is required";
         if (!data.lastName) errors.lastName = "Last name is required";
         if (!data.email) errors.email = "Email is required";
@@ -113,51 +93,35 @@ const Register = () => {
         if (!data.confirmPassword) errors.confirmPassword = "Confirm password is required";
         else if (data.password !== data.confirmPassword) errors.confirmPassword = "Passwords do not match";
         if (!data.role) errors.role = "Role is required";
-
         return errors;
     };
 
-    const resetData = () => {
-        setFormData({
-            firstName: '',
-            lastName: '',
-            email: '',
-            phone: '',
-            password: '',
-            confirmPassword: '',
-            role: '',
-        })
-    };
-
     return (
-        <div className="flex flex-col lg:flex-row h-[450px]">
+        <div className="flex flex-col lg:flex-row min-h-screen bg-gray-100">
             {/* Left side image */}
-            <div className="lg:w-1/2 w-full flex justify-center items-center bg-yellow-200">
-                <div>
-                    <img
-                        src="https://res.cloudinary.com/dm71xhdxd/image/upload/v1736420880/Wall_post-amico_lwthdr.png"
-                        className="w-96 h-94"
-                    />
-                </div>
+            <div className="lg:w-1/2 w-full flex justify-center items-center bg-yellow-200 py-8 lg:py-0">
+                <img
+                    src="https://res.cloudinary.com/dm71xhdxd/image/upload/v1736420880/Wall_post-amico_lwthdr.png"
+                    className="w-72 h-auto"
+                    alt="Illustration"
+                />
             </div>
 
             {/* Right side form */}
-            <div className="lg:w-1/2 w-full flex justify-center items-center bg-white p-8">
+            <div className="lg:w-1/2 w-full flex justify-center items-center bg-white p-6 lg:p-8">
                 <form onSubmit={handleSubmit} className="space-y-2 w-full max-w-sm mx-auto font-[sans-serif]">
-                    {/* Sign Up Heading */}
-                    <h2 className="text-xl font-semibold text-center mb-4">Sign Up</h2>
+                    <h2 className="text-2xl font-semibold text-center text-gray-700 mb-2">Sign Up</h2>
 
                     {/* First Name and Last Name */}
-                    <div className="flex space-x-4">
+                    <div className="flex flex-col lg:flex-row space-y-2 lg:space-y-0 lg:space-x-3">
                         <div className="w-full">
                             <input
                                 type="text"
                                 name="firstName"
                                 placeholder="First Name"
                                 value={formData.firstName}
-                                onChange={handleInputChange}
-                                className="w-full px-2 py-2 border-b-2 border-gray-300 focus:outline-none 
-                                    focus:border-b-2 focus:border-yellow-300 placeholder-gray-400 bg-transparent"
+                                onChange={(e) => handleInputChange(e, setFormData)}
+                                className="w-full px-3 py-2 border-b-2 border-gray-300 focus:outline-none focus:border-yellow-300 placeholder-gray-400 bg-transparent"
                             />
                             {formErrors.firstName && <p className="text-red-500 text-sm">{formErrors.firstName}</p>}
                         </div>
@@ -167,9 +131,8 @@ const Register = () => {
                                 name="lastName"
                                 placeholder="Last Name"
                                 value={formData.lastName}
-                                onChange={handleInputChange}
-                                className="w-full px-2 py-2 border-b-2 border-gray-300 focus:outline-none 
-                                    focus:border-b-2 focus:border-yellow-300 placeholder-gray-400 bg-transparent"
+                                onChange={(e) => handleInputChange(e, setFormData)}
+                                className="w-full px-3 py-2 border-b-2 border-gray-300 focus:outline-none focus:border-yellow-300 placeholder-gray-400 bg-transparent"
                             />
                             {formErrors.lastName && <p className="text-red-500 text-sm">{formErrors.lastName}</p>}
                         </div>
@@ -182,9 +145,8 @@ const Register = () => {
                             name="email"
                             placeholder="Email"
                             value={formData.email}
-                            onChange={handleInputChange}
-                            className="w-full px-2 py-2 border-b-2 border-gray-300 focus:outline-none 
-                                    focus:border-b-2 focus:border-yellow-300 placeholder-gray-400 bg-transparent"
+                            onChange={(e) => handleInputChange(e, setFormData)}
+                            className="w-full px-3 py-2 border-b-2 border-gray-300 focus:outline-none focus:border-yellow-300 placeholder-gray-400 bg-transparent"
                         />
                         {formErrors.email && <p className="text-red-500 text-sm">{formErrors.email}</p>}
                     </div>
@@ -196,71 +158,42 @@ const Register = () => {
                             name="phone"
                             placeholder="Phone"
                             value={formData.phone}
-                            onChange={handleInputChange}
-                            className="w-full px-3 py-2 border-b-2 border-gray-300 focus:outline-none 
-                                    focus:border-b-2 focus:border-yellow-300 placeholder-gray-400 bg-transparent"
+                            onChange={(e) => handleInputChange(e, setFormData)}
+                            className="w-full px-3 py-2 border-b-2 border-gray-300 focus:outline-none focus:border-yellow-300 placeholder-gray-400 bg-transparent"
                         />
-                        <FaPhoneAlt className="absolute right-2 top-2 text-gray-400" />
+                        <FaPhoneAlt className="absolute right-3 top-3 text-gray-400" />
                         {formErrors.phone && <p className="text-red-500 text-sm">{formErrors.phone}</p>}
                     </div>
 
                     {/* Password and Confirm Password */}
-                    <div className="flex space-x-4">
-                        <div className="relative w-full">
-                            <input
-                                type={showPassword ? "text" : "password"}
-                                name="password"
-                                placeholder="Password"
-                                value={formData.password}
-                                onChange={handleInputChange}
-                                className="w-full px-3 py-2 border-b-2 border-gray-300 focus:outline-none 
-                                    focus:border-b-2 focus:border-yellow-300 placeholder-gray-400 bg-transparent"
-                            />
-                            {formErrors.password && <p className="text-red-500 text-sm">{formErrors.password}</p>}
-                            <div
-                                onClick={togglePasswordVisibility}
-                                className="absolute right-2 top-2 cursor-pointer"
-                            >
-                                {showPassword ? (
-                                    <FaEyeSlash className="text-gray-400" />
-                                ) : (
-                                    <FaEye className="text-gray-400" />
-                                )}
-                            </div>
-                        </div>
-
-                        <div className="relative w-full">
-                            <input
-                                type={showPassword ? "text" : "password"}
-                                name="confirmPassword"
-                                placeholder="Confirm Password"
-                                value={formData.confirmPassword}
-                                onChange={handleInputChange}
-                                className="w-full px-3 py-2 border-b-2 border-gray-300 focus:outline-none 
-                                    focus:border-b-2 focus:border-yellow-300 placeholder-gray-400 bg-transparent"
-                            />
-                            {formErrors.confirmPassword && <p className="text-red-500 text-sm">{formErrors.confirmPassword}</p>}
-                            <div
-                                onClick={togglePasswordVisibility}
-                                className="absolute right-2 top-2 cursor-pointer"
-                            >
-                                {showPassword ? (
-                                    <FaEyeSlash className="text-gray-400" />
-                                ) : (
-                                    <FaEye className="text-gray-400" />
-                                )}
-                            </div>
-                        </div>
+                    <div className="flex flex-col lg:flex-row space-y-2 lg:space-y-0 lg:space-x-3">
+                        <PasswordField
+                            name="password"
+                            value={formData.password}
+                            onChange={(e) => handleInputChange(e, setFormData)}
+                            showPassword={showPassword}
+                            togglePassword={togglePasswordVisibility}
+                            placeholder="Password"
+                            error={formErrors.password}
+                        />
+                        <PasswordField
+                            name="confirmPassword"
+                            value={formData.confirmPassword}
+                            onChange={(e) => handleInputChange(e, setFormData)}
+                            showPassword={showPassword}
+                            togglePassword={togglePasswordVisibility}
+                            placeholder="Confirm Password"
+                            error={formErrors.confirmPassword}
+                        />
                     </div>
 
-                    {/* Select Option */}
+                    {/* Role selection */}
                     <div>
                         <select
                             name="role"
                             value={formData.role}
-                            onChange={handleInputChange}
-                            className="w-full px-2 py-2 border-b-2 border-gray-300 focus:outline-none 
-                                    focus:border-b-2 focus:border-yellow-300 placeholder-gray-400 bg-transparent"
+                            onChange={(e) => handleInputChange(e, setFormData)}
+                            className="w-full px-3 py-2 border-b-2 border-gray-300 focus:outline-none focus:border-yellow-300 placeholder-gray-400 bg-transparent"
                         >
                             <option value="">Select Role</option>
                             <option value="buyer">Buyer</option>
@@ -274,8 +207,8 @@ const Register = () => {
                     <div className="flex items-center">
                         <input
                             type="checkbox"
-                            checked={rememberMe}
-                            onChange={() => setRememberMe(!rememberMe)}
+                            checked={formData.rememberMe}
+                            onChange={() => setFormData((prev) => ({ ...prev, rememberMe: !prev.rememberMe }))}
                             className="w-4 h-4 text-blue-600 border-gray-300 rounded"
                         />
                         <span className="text-gray-400 text-sm ml-2">
@@ -284,20 +217,14 @@ const Register = () => {
                     </div>
 
                     {/* Submit Button */}
-                    <button
-                        type="submit"
-                        className="px-6 py-2 w-full bg-green-400 hover:bg-green-500 text-sm text-white mx-auto block"
-                    >
+                    <button type="submit" className="w-full px-6 py-2 bg-green-400 hover:bg-green-500 text-white rounded">
                         Submit
                     </button>
 
-                    {/* Already have an account? Login link */}
-                    <div className="text-sm text-center mt-4">
+                    {/* Sign In link */}
+                    <div className="text-sm text-center mt-3">
                         <span>Already have an account? </span>
-                        <Link
-                            href="/common/login"
-                            className="text-blue-500 hover:text-blue-600 hover:underline"
-                        >
+                        <Link href="/common/login" className="text-blue-500 hover:text-blue-600 hover:underline">
                             Sign In
                         </Link>
                     </div>
