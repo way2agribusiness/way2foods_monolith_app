@@ -5,7 +5,7 @@ const AddressCard = () => {
     return (
         <div className="bg-white rounded-lg p-4 border border-gray-200 text-xs relative">
             {/* Radio Button for Selection */}
-            <div className="absolute top-4 right-4">
+            <div className="">
                 <input type="radio" name="address" className="w-5 h-5 cursor-pointer" />
             </div>
 

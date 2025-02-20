@@ -11,7 +11,7 @@ import Link from "next/link";
 const navItems = [
   { id: 1, title: "Dashboard", icon: <RxDashboard />, path: "/admin/dashboard" },
   { id: 2, title: "Products", icon: <RiProductHuntLine />, path: "/admin/collections" },
-  { id: 3, title: "Orders", icon: <BsCart4 />, path: "#" },
+  { id: 3, title: "Orders", icon: <BsCart4 />, path: '/admin/orders' },
   { id: 4, title: "Users", icon: <HiOutlineUsers />, path: "#" },
   { id: 5, title: "APMC Connect", icon: <IoStorefrontOutline />, path: "#" },
   { id: 6, title: "FPO Connect", icon: <IoIosGlobe />, path: "#" },
@@ -28,9 +28,8 @@ export default function App({ setIsSidebarOpen, isSidebarOpen }) {
     <div>
       {/* Sidebar */}
       <nav
-        className={`${
-          isSidebarOpen ? "w-[250px]" : "w-[80px]"
-        } bg-white shadow-lg h-screen py-6 px-4 font-[sans-serif] transition-all ease-in-out duration-[1000ms]`}
+        className={`${isSidebarOpen ? "w-[250px]" : "w-[80px]"
+          } bg-white shadow-lg h-screen py-6 px-4 font-[sans-serif] transition-all ease-in-out duration-[1000ms]`}
       >
         {/* Logo Section */}
         <div className="relative text-xs">
@@ -39,16 +38,14 @@ export default function App({ setIsSidebarOpen, isSidebarOpen }) {
             <img
               src="https://res.cloudinary.com/dm71xhdxd/image/upload/v1696576692/Static%20Images/W2F_gnw3ch_jvntof.webp"
               alt="Company Logo"
-              className={`transition-all ease-in-out duration-[1000ms] mb-2 ${
-                isSidebarOpen ? "h-12 w-auto" : "h-8 w-auto"
-              }`}
+              className={`transition-all ease-in-out duration-[1000ms] mb-2 ${isSidebarOpen ? "h-12 w-auto" : "h-8 w-auto"
+                }`}
             />
             {/* Logo Text */}
             <a
               href="#"
-              className={`text-gray-800 font-semibold text-lg transition-all ease-in-out duration-[1000ms] ${
-                isSidebarOpen ? "opacity-100" : "opacity-0 pointer-events-none"
-              }`}
+              className={`text-gray-800 font-semibold text-lg transition-all ease-in-out duration-[1000ms] ${isSidebarOpen ? "opacity-100" : "opacity-0 pointer-events-none"
+                }`}
             >
               Admin
             </a>
@@ -74,13 +71,12 @@ export default function App({ setIsSidebarOpen, isSidebarOpen }) {
             {navItems.map((item) => (
               <li
                 key={item.id}
-                className={`p-2 hover:bg-green-100 rounded-lg cursor-pointer transition-all ease-in-out duration-[1000ms] ${
-                  activeItem.id === item.id ? "bg-green-100 text-green-700" : ""
-                }`}
+                className={`p-2 hover:bg-green-100 rounded-lg cursor-pointer transition-all ease-in-out duration-[1000ms] ${activeItem.id === item.id ? "bg-green-100 text-green-700" : ""
+                  }`}
                 onClick={() => setActiveItem(item)} // Set active item on click
               >
                 <Link href={item.path}
-                className="flex items-center gap-3">
+                  className="flex items-center gap-3">
                   <span className="">{item.icon}</span>
                   <span
                     className={`text-gray-700 ${isSidebarOpen ? "opacity-100" : "opacity-0"}`}

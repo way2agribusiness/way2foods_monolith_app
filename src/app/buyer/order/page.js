@@ -1,10 +1,11 @@
 'use client';
 import React, { useState, useEffect, useContext } from "react";
 import { UserContext } from "@/context/userContext";
-import { MdEdit, MdDelete } from "react-icons/md";
+import { MdEdit, MdDelete, MdAdd } from "react-icons/md";
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import Address from '../profile/addressAdd';
+import { useRouter } from 'next/navigation';
 import {
   FaCreditCard,
   FaRegCreditCard,
@@ -14,21 +15,29 @@ import {
 } from "react-icons/fa";
 
 const OrderPage = () => {
+  const router = useRouter();
   const [isScrolled, setIsScrolled] = useState(false);
   const { user, setUser } = useContext(UserContext);
   const [cartItems, setCartItems] = useState([]);
   const [selectedAddress, setSelectedAddress] = useState(null);
   const [editAddressId, setEditAddressId] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [selectedPayment, setSelectedPayment] = useState(null);
+  const [showPopup, setShowPopup] = useState(false);
 
-  // Fetch cart data from API or sessionStorage
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      router.push('/common/login');
+    }
+  }, [router]);
+
   useEffect(() => {
     const fetchCartData = async () => {
       try {
         let items = [];
 
         if (user) {
-          // Fetch from API for authenticated users
           const token = localStorage.getItem("token");
           if (!token) return;
 
@@ -50,7 +59,6 @@ const OrderPage = () => {
             })) || [];
           }
         } else {
-          // Fetch from sessionStorage for guests
           const sessionItems = JSON.parse(
             sessionStorage.getItem("productItem") || "[]"
           );
@@ -72,7 +80,6 @@ const OrderPage = () => {
     fetchCartData();
   }, [user]);
 
-  // Address deletion handler
   const handleDeleteAddress = async (addressId) => {
     setIsLoading(true);
     try {
@@ -101,22 +108,66 @@ const OrderPage = () => {
     }
   };
 
-  // Scroll effect
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 50);
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Calculate order totals
   const calculateSubtotal = () =>
     cartItems.reduce((total, item) => total + item.price * item.quantity, 0);
-  const tax = calculateSubtotal() * 0.1;
-  const total = calculateSubtotal() + tax;
+  const total = calculateSubtotal();
+
+  const generateUpiUrl = () => {
+    const amount = total.toFixed(2);
+    return `https://api.qrserver.com/v1/create-qr-code/?size=225x225&data=upi%3A%2F%2Fpay%3Fpa%3D9449004956%40ybl%26pn%3DWay2Foods%26am%3D${amount}%26cu%3DINR`;
+  };
+
+  const handlePlaceOrder = async () => {
+    if (!selectedAddress || !selectedPayment) {
+      toast.error("Please select an address and payment method");
+      return;
+    }
+
+    setShowPopup(true);
+
+    const orderDetails = {
+      items: cartItems,
+      total,
+      address: user.addressID.find(addr => addr._id === selectedAddress),
+      paymentMethod: selectedPayment,
+    };
+
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/orders`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(orderDetails),
+      });
+
+      if (response.ok) {
+        toast.success("Order placed successfully");
+        // Clear cart or redirect to order confirmation page
+      } else {
+        toast.error("Failed to place order");
+      }
+    } catch (error) {
+      toast.error(error.message || "Failed to place order");
+    } finally {
+      setShowPopup(false);
+    }
+  };
+
+  if (!localStorage.getItem("token")) {
+    return null;
+  }
 
   return (
     <div className="max-w-6xl mx-auto p-2 md:p-4 bg-white">
-      {/* Header Section */}
       <div className="mb-2">
         <h1 className="text-sm md:text-sm font-bold text-gray-800">Complete your order</h1>
         <p className="text-xs text-gray-500">
@@ -124,11 +175,8 @@ const OrderPage = () => {
         </p>
       </div>
 
-      {/* Main Container */}
       <div className="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-6">
-        {/* Left Column */}
         <div className="w-full md:w-2/3">
-          {/* Product List Section */}
           <div className="bg-white border border-gray-200 rounded-lg p-4">
             <h2 className="text-sm font-semibold mb-0">Items in your cart</h2>
             {cartItems.length > 0 ? (
@@ -154,9 +202,17 @@ const OrderPage = () => {
             )}
           </div>
 
-          {/* Address Section */}
           <div className="mt-1">
-            <h2 className="text-sm font-semibold mb-2">Select Address</h2>
+            <div className="flex justify-between items-center mb-2">
+              <h2 className="text-sm font-semibold">Select Address</h2>
+              <button
+                className="text-blue-500 hover:text-blue-700 flex items-center"
+                onClick={() => setEditAddressId('new')}
+              >
+                <MdAdd className="w-5 h-5 mr-1" />
+                Add Address
+              </button>
+            </div>
             {isLoading ? (
               <p className="text-sm text-gray-500">Loading addresses...</p>
             ) : user?.addressID?.length > 0 ? (
@@ -206,19 +262,16 @@ const OrderPage = () => {
             )}
           </div>
 
-          {/* Address Form Section */}
           {editAddressId && (
             <div className="mt-4">
               <Address editAddressId={editAddressId} setEditAddressId={setEditAddressId} />
             </div>
           )}
 
-          {/* Payment Section */}
           <div className="mt-1">
             <h2 className="text-sm font-semibold mb-1">Payment Method</h2>
             <div className="bg-white border border-gray-200 rounded-lg p-4">
               <div className="space-y-3">
-                {/* Payment Options */}
                 <div className="relative opacity-50 cursor-not-allowed">
                   <div className="flex items-center p-3 rounded-md border border-gray-100 bg-gray-50">
                     <div className="flex items-center space-x-3 w-full">
@@ -242,7 +295,14 @@ const OrderPage = () => {
                   </div>
                 </div>
                 <label className="group flex items-center p-3 rounded-md border border-green-100 bg-white hover:border-green-200 transition-colors cursor-pointer">
-                  <input type="radio" name="payment" value="upi" className="sr-only" />
+                  <input
+                    type="radio"
+                    name="payment"
+                    value="upi"
+                    className="sr-only"
+                    onChange={() => setSelectedPayment('upi')}
+                    checked={selectedPayment === 'upi'}
+                  />
                   <div className="flex items-center space-x-3 w-full">
                     <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center">
                       <FaMobileAlt className="w-4 h-4 text-green-600" />
@@ -257,7 +317,14 @@ const OrderPage = () => {
                   </div>
                 </label>
                 <label className="group flex items-center p-3 rounded-md border border-orange-100 bg-white hover:border-orange-200 transition-colors cursor-pointer">
-                  <input type="radio" name="payment" value="cod" className="sr-only" />
+                  <input
+                    type="radio"
+                    name="payment"
+                    value="cod"
+                    className="sr-only"
+                    onChange={() => setSelectedPayment('cod')}
+                    checked={selectedPayment === 'cod'}
+                  />
                   <div className="flex items-center space-x-3 w-full">
                     <div className="w-6 h-6 bg-orange-100 rounded-full flex items-center justify-center">
                       <FaWallet className="w-4 h-4 text-orange-600" />
@@ -272,11 +339,28 @@ const OrderPage = () => {
                   </div>
                 </label>
               </div>
+
+              {selectedPayment === 'upi' && (
+                <div className="mt-4 p-4 border-t border-gray-100">
+                  <div className="flex flex-col items-center">
+                    <p className="text-sm font-medium mb-3">
+                      Scan this QR code using any UPI app to pay ₹{total.toFixed(2)}
+                    </p>
+                    <img
+                      src={generateUpiUrl()}
+                      alt="UPI QR Code"
+                      className="w-48 h-48 object-contain border border-gray-200 rounded-lg"
+                    />
+                    <p className="text-xs text-gray-500 mt-3 text-center">
+                      Note: Refresh the page if you've already made the payment
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
 
-        {/* Right Column (Order Summary) */}
         <div className="w-full md:w-1/3">
           <div className="bg-white border border-gray-200 rounded-lg p-6 sticky top-4">
             <h2 className="text-md font-semibold mb-4">Order Summary</h2>
@@ -284,10 +368,6 @@ const OrderPage = () => {
               <div className="flex justify-between">
                 <p>Subtotal</p>
                 <p>₹{calculateSubtotal().toFixed(2)}</p>
-              </div>
-              <div className="flex justify-between">
-                <p>Tax (10%)</p>
-                <p>₹{tax.toFixed(2)}</p>
               </div>
               <div className="flex justify-between">
                 <p>Delivery Charges</p>
@@ -299,7 +379,8 @@ const OrderPage = () => {
               </div>
               <button
                 className="w-full bg-green-500 text-white py-3 rounded-lg hover:bg-green-600 transition"
-                disabled={!selectedAddress}
+                onClick={handlePlaceOrder}
+                disabled={!selectedAddress || !selectedPayment}
               >
                 Place your order
               </button>
@@ -308,6 +389,7 @@ const OrderPage = () => {
           <div className="mt-4">
             <p className="underline text-sm">Caution:</p>
             <ul className="text-xs space-y-2 mt-2">
+              <li>Go back to the cart page to edit your order</li>
               <li>Please confirm your address before proceeding to payment</li>
               <li>Once payment is confirmed, share payment details to confirm your order</li>
               <li>Contact us at +91 9449004956 for any queries</li>
@@ -316,7 +398,6 @@ const OrderPage = () => {
         </div>
       </div>
 
-      {/* Mobile Fixed Bottom Button */}
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 shadow-lg md:hidden">
         <div className="max-w-6xl mx-auto px-4 py-3">
           <div className="flex items-center justify-between gap-4">
@@ -331,7 +412,8 @@ const OrderPage = () => {
             </div>
             <button
               className="flex-shrink-0 bg-green-500 hover:bg-green-600 transition-all px-8 py-4 rounded-xl shadow-md hover:shadow-lg focus:ring-2 ring-green-200 ring-offset-2"
-              disabled={!selectedAddress}
+              onClick={handlePlaceOrder}
+              disabled={!selectedAddress || !selectedPayment}
             >
               <span className="flex items-center gap-2 text-white font-semibold text-sm uppercase tracking-wide">
                 Place Order
@@ -352,6 +434,15 @@ const OrderPage = () => {
           </div>
         </div>
       </div>
+
+      {showPopup && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white p-6 rounded-lg shadow-lg animate-bounce">
+            <p className="text-lg font-semibold mb-4">Processing your order...</p>
+            <p className="text-gray-600">Please wait while we confirm your order.</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

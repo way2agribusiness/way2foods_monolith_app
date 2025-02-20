@@ -161,14 +161,14 @@ const CartPage = () => {
     };
 
     // Memoized calculations
-    const { subtotal1, tax1, total1, subtotal2, tax2, total2 } = useMemo(() => {
+    const { subtotal1, total1, subtotal2, total2 } = useMemo(() => {
         const subtotal1 = cartItems.reduce((sum, item) => sum + (item.price * item.product_length), 0);
-        const tax1 = subtotal1 * 0.1;
-        const total1 = subtotal1 + tax1;
+        // const tax1 = subtotal1 * 0.1;
+        const total1 = subtotal1;
         const subtotal2 = cartItems2.reduce((sum, item) => sum + (item.price * item.product_length), 0);
-        const tax2 = subtotal2 * 0.1;
-        const total2 = subtotal2 + tax2;
-        return { subtotal1, tax1, total1, subtotal2, tax2, total2 };
+        // const tax2 = subtotal2 * 0.1;
+        const total2 = subtotal2;
+        return { subtotal1, total1, subtotal2, total2 };
     }, [cartItems, cartItems2]);
 
     const cartProductSubmit = async () => {
@@ -193,7 +193,7 @@ const CartPage = () => {
             }
 
             const data = await response.json();
-            alert('Product saved in order page!');
+            // alert('Product saved in order page!');
             sessionStorage.removeItem('productItem');
             fetchCartData();
 
@@ -304,10 +304,10 @@ const CartPage = () => {
                                 <span>Subtotal:</span>
                                 <span>₹{(subtotal1 + subtotal2).toFixed(2)}</span>
                             </div>
-                            <div className="flex justify-between">
+                            {/* <div className="flex justify-between">
                                 <span>Tax (10%):</span>
                                 <span>₹{(tax1 + tax2).toFixed(2)}</span>
-                            </div>
+                            </div> */}
                             <div className="flex justify-between">
                                 <span>Delivery:</span>
                                 <span className="text-green-500">FREE</span>
