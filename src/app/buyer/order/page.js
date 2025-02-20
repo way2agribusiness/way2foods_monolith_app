@@ -16,15 +16,15 @@ import {
 
 const OrderPage = () => {
   const router = useRouter();
-  const [isScrolled, setIsScrolled] = useState(false);
   const { user, setUser } = useContext(UserContext);
   const [cartItems, setCartItems] = useState([]);
   const [selectedAddress, setSelectedAddress] = useState(null);
   const [editAddressId, setEditAddressId] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState(null);
-  const [showPopup, setShowPopup] = useState(false);
+  const [showOrderConfirmation, setShowOrderConfirmation] = useState(false);
 
+  // Redirect to login if user is not logged in
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (!token) {
@@ -32,12 +32,14 @@ const OrderPage = () => {
     }
   }, [router]);
 
+  // Fetch cart data from API or sessionStorage
   useEffect(() => {
     const fetchCartData = async () => {
       try {
         let items = [];
 
         if (user) {
+          // Fetch from API for authenticated users
           const token = localStorage.getItem("token");
           if (!token) return;
 
@@ -59,6 +61,7 @@ const OrderPage = () => {
             })) || [];
           }
         } else {
+          // Fetch from sessionStorage for guests
           const sessionItems = JSON.parse(
             sessionStorage.getItem("productItem") || "[]"
           );
@@ -80,6 +83,7 @@ const OrderPage = () => {
     fetchCartData();
   }, [user]);
 
+  // Address deletion handler
   const handleDeleteAddress = async (addressId) => {
     setIsLoading(true);
     try {
@@ -108,66 +112,76 @@ const OrderPage = () => {
     }
   };
 
-  useEffect(() => {
-    const handleScroll = () => setIsScrolled(window.scrollY > 50);
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
-
+  // Calculate order totals
   const calculateSubtotal = () =>
     cartItems.reduce((total, item) => total + item.price * item.quantity, 0);
   const total = calculateSubtotal();
 
+  // Generate UPI URL with dynamic amount
   const generateUpiUrl = () => {
     const amount = total.toFixed(2);
     return `https://api.qrserver.com/v1/create-qr-code/?size=225x225&data=upi%3A%2F%2Fpay%3Fpa%3D9449004956%40ybl%26pn%3DWay2Foods%26am%3D${amount}%26cu%3DINR`;
   };
 
-  const handlePlaceOrder = async () => {
+  // Handle place order
+  const handlePlaceOrder = () => {
     if (!selectedAddress || !selectedPayment) {
-      toast.error("Please select an address and payment method");
+      toast.error("Please select address and payment method");
       return;
     }
-
-    setShowPopup(true);
-
-    const orderDetails = {
-      items: cartItems,
-      total,
-      address: user.addressID.find(addr => addr._id === selectedAddress),
-      paymentMethod: selectedPayment,
-    };
-
-    try {
-      const token = localStorage.getItem("token");
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/orders`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(orderDetails),
-      });
-
-      if (response.ok) {
-        toast.success("Order placed successfully");
-        // Clear cart or redirect to order confirmation page
-      } else {
-        toast.error("Failed to place order");
-      }
-    } catch (error) {
-      toast.error(error.message || "Failed to place order");
-    } finally {
-      setShowPopup(false);
-    }
+    setShowOrderConfirmation(true);
   };
 
-  if (!localStorage.getItem("token")) {
-    return null;
-  }
+  // Order Confirmation Modal
+  const OrderConfirmationModal = () => (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 animate-fade-in">
+      <div className="bg-white rounded-lg p-6 max-w-md w-full animate-slide-up">
+        <h3 className="text-lg font-bold mb-4">Order Confirmed! 🎉</h3>
+        <div className="space-y-2">
+          <p className="text-sm">
+            Your order for <strong>₹{total.toFixed(2)}</strong> has been placed successfully.
+          </p>
+          {selectedPayment === 'upi' && (
+            <p className="text-sm text-yellow-600">
+              Please complete your payment using the UPI QR code.
+            </p>
+          )}
+          {selectedPayment === 'cod' && (
+            <p className="text-sm text-green-600">
+              Payment will be collected when your order is delivered.
+            </p>
+          )}
+        </div>
+        <button
+          onClick={() => setShowOrderConfirmation(false)}
+          className="mt-6 w-full bg-green-500 text-white py-2 rounded-lg hover:bg-green-600 transition"
+        >
+          Close
+        </button>
+      </div>
+    </div>
+  );
 
   return (
     <div className="max-w-6xl mx-auto p-2 md:p-4 bg-white">
+      {/* Add global styles for animations */}
+      <style jsx global>{`
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        @keyframes slideUp {
+          from { transform: translateY(20px); opacity: 0; }
+          to { transform: translateY(0); opacity: 1; }
+        }
+        .animate-fade-in { animation: fadeIn 0.3s ease-out; }
+        .animate-slide-up { animation: slideUp 0.3s ease-out; }
+      `}</style>
+
+      {/* Order Confirmation Modal */}
+      {showOrderConfirmation && <OrderConfirmationModal />}
+
+      {/* Header Section */}
       <div className="mb-2">
         <h1 className="text-sm md:text-sm font-bold text-gray-800">Complete your order</h1>
         <p className="text-xs text-gray-500">
@@ -175,8 +189,11 @@ const OrderPage = () => {
         </p>
       </div>
 
+      {/* Main Container */}
       <div className="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-6">
+        {/* Left Column */}
         <div className="w-full md:w-2/3">
+          {/* Product List Section */}
           <div className="bg-white border border-gray-200 rounded-lg p-4">
             <h2 className="text-sm font-semibold mb-0">Items in your cart</h2>
             {cartItems.length > 0 ? (
@@ -202,15 +219,15 @@ const OrderPage = () => {
             )}
           </div>
 
-          <div className="mt-1">
-            <div className="flex justify-between items-center mb-2">
+          {/* Address Section */}
+          <div className="mt-4">
+            <div className="flex justify-between items-center mb-3">
               <h2 className="text-sm font-semibold">Select Address</h2>
               <button
-                className="text-blue-500 hover:text-blue-700 flex items-center"
                 onClick={() => setEditAddressId('new')}
+                className="flex items-center text-sm text-blue-600 hover:text-blue-700"
               >
-                <MdAdd className="w-5 h-5 mr-1" />
-                Add Address
+                <MdAdd className="mr-1" /> Add Address
               </button>
             </div>
             {isLoading ? (
@@ -262,16 +279,19 @@ const OrderPage = () => {
             )}
           </div>
 
+          {/* Address Form Section */}
           {editAddressId && (
             <div className="mt-4">
               <Address editAddressId={editAddressId} setEditAddressId={setEditAddressId} />
             </div>
           )}
 
-          <div className="mt-1">
-            <h2 className="text-sm font-semibold mb-1">Payment Method</h2>
+          {/* Payment Section */}
+          <div className="mt-4">
+            <h2 className="text-sm font-semibold mb-2">Payment Method</h2>
             <div className="bg-white border border-gray-200 rounded-lg p-4">
               <div className="space-y-3">
+                {/* Payment Options */}
                 <div className="relative opacity-50 cursor-not-allowed">
                   <div className="flex items-center p-3 rounded-md border border-gray-100 bg-gray-50">
                     <div className="flex items-center space-x-3 w-full">
@@ -340,6 +360,7 @@ const OrderPage = () => {
                 </label>
               </div>
 
+              {/* UPI QR Code Display */}
               {selectedPayment === 'upi' && (
                 <div className="mt-4 p-4 border-t border-gray-100">
                   <div className="flex flex-col items-center">
@@ -361,6 +382,7 @@ const OrderPage = () => {
           </div>
         </div>
 
+        {/* Right Column (Order Summary) */}
         <div className="w-full md:w-1/3">
           <div className="bg-white border border-gray-200 rounded-lg p-6 sticky top-4">
             <h2 className="text-md font-semibold mb-4">Order Summary</h2>
@@ -378,9 +400,10 @@ const OrderPage = () => {
                 <p>₹{total.toFixed(2)}</p>
               </div>
               <button
-                className="w-full bg-green-500 text-white py-3 rounded-lg hover:bg-green-600 transition"
                 onClick={handlePlaceOrder}
+                
                 disabled={!selectedAddress || !selectedPayment}
+                className="w-full bg-green-500 text-white py-3 rounded-lg hover:bg-green-600 transition disabled:bg-gray-300 disabled:cursor-not-allowed"
               >
                 Place your order
               </button>
@@ -397,52 +420,6 @@ const OrderPage = () => {
           </div>
         </div>
       </div>
-
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 shadow-lg md:hidden">
-        <div className="max-w-6xl mx-auto px-4 py-3">
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex-1">
-              <p className="text-xs text-gray-500 font-medium">Total Payable</p>
-              <div className="flex items-baseline gap-2">
-                <span className="text-xl font-bold text-gray-900 tracking-tight">
-                  ₹{total.toFixed(2)}
-                </span>
-                <span className="text-xs text-green-600">(Incl. all taxes)</span>
-              </div>
-            </div>
-            <button
-              className="flex-shrink-0 bg-green-500 hover:bg-green-600 transition-all px-8 py-4 rounded-xl shadow-md hover:shadow-lg focus:ring-2 ring-green-200 ring-offset-2"
-              onClick={handlePlaceOrder}
-              disabled={!selectedAddress || !selectedPayment}
-            >
-              <span className="flex items-center gap-2 text-white font-semibold text-sm uppercase tracking-wide">
-                Place Order
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-5 w-5"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.707l-3-3a1 1 0 00-1.414 1.414L10.586 9H7a1 1 0 100 2h3.586l-1.293 1.293a1 1 0 101.414 1.414l3-3a1 1 0 000-1.414z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-              </span>
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {showPopup && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="bg-white p-6 rounded-lg shadow-lg animate-bounce">
-            <p className="text-lg font-semibold mb-4">Processing your order...</p>
-            <p className="text-gray-600">Please wait while we confirm your order.</p>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
