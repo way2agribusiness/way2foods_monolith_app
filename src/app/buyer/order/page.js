@@ -2,10 +2,10 @@
 import React, { useState, useEffect, useContext } from "react";
 import { UserContext } from "@/context/userContext";
 import { MdEdit, MdDelete, MdAdd } from "react-icons/md";
-import { toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
-import Address from '../profile/addressAdd';
-import { useRouter } from 'next/navigation';
+import { toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import Address from "../profile/addressAdd";
+import { useRouter } from "next/navigation";
 import {
   FaCreditCard,
   FaRegCreditCard,
@@ -23,12 +23,13 @@ const OrderPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState(null);
   const [showOrderConfirmation, setShowOrderConfirmation] = useState(false);
+  const [showUpiQrModal, setShowUpiQrModal] = useState(false); // New state for UPI QR modal
 
   // Redirect to login if user is not logged in
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (!token) {
-      router.push('/common/login');
+      router.push("/common/login");
     }
   }, [router]);
 
@@ -52,7 +53,7 @@ const OrderPage = () => {
 
           if (response.ok) {
             const data = await response.json();
-            items = data.cart?.cartProducts?.map(item => ({
+            items = data.cart?.cartProducts?.map((item) => ({
               id: item.productID?._id,
               name: item.productID?.title,
               price: item.productID?.price,
@@ -65,7 +66,7 @@ const OrderPage = () => {
           const sessionItems = JSON.parse(
             sessionStorage.getItem("productItem") || "[]"
           );
-          items = sessionItems.map(item => ({
+          items = sessionItems.map((item) => ({
             id: item.productID?._id,
             name: item.productID?.title,
             price: item.productID?.price,
@@ -77,6 +78,7 @@ const OrderPage = () => {
         setCartItems(items);
       } catch (error) {
         console.error("Error fetching cart data:", error);
+        toast.error("Failed to fetch cart data");
       }
     };
 
@@ -120,16 +122,80 @@ const OrderPage = () => {
   // Generate UPI URL with dynamic amount
   const generateUpiUrl = () => {
     const amount = total.toFixed(2);
-    return `https://api.qrserver.com/v1/create-qr-code/?size=225x225&data=upi%3A%2F%2Fpay%3Fpa%3D9449004956%40ybl%26pn%3DWay2Foods%26am%3D${amount}%26cu%3DINR`;
+    const upiId = "9449004956@ybl"; // Replace with your UPI ID
+    const merchantName = "Way2Foods"; // Replace with your merchant name
+    return `upi://pay?pa=${upiId}&pn=${encodeURIComponent(merchantName)}&am=${amount}&cu=INR`;
+  };
+
+  // Generate QR code URL using a QR code API
+  const generateQrCodeUrl = () => {
+    return `https://api.qrserver.com/v1/create-qr-code/?size=225x225&data=${encodeURIComponent(generateUpiUrl())}`;
+  };
+
+  // Handle UPI payment selection
+  const handleUpiPaymentClick = () => {
+    setSelectedPayment("upi");
+    setShowUpiQrModal(true); // Show UPI QR modal
   };
 
   // Handle place order
-  const handlePlaceOrder = () => {
+  const handlePlaceOrder = async () => {
     if (!selectedAddress || !selectedPayment) {
       toast.error("Please select address and payment method");
       return;
     }
-    setShowOrderConfirmation(true);
+
+    setIsLoading(true);
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) throw new Error("User not authenticated");
+
+      // Get selected address details
+      const address = user.addressID.find((a) => a._id === selectedAddress);
+      if (!address) throw new Error("Selected address not found");
+
+      // Prepare order payload
+      const orderPayload = {
+        products: cartItems.map((item) => ({
+          product: item.id,
+          quantity: item.quantity,
+        })),
+        shippingAddress: {
+          address_line1: address.address_line1,
+          address_line2: address.address_line2,
+          city: address.city,
+          district: address.district,
+          state: address.state,
+          country: address.country,
+          Zip_Code: address.Zip_Code,
+          phone: address.phone,
+        },
+        paymentMethod: selectedPayment,
+        totalAmount: total,
+        contactNumber: address.phone,
+      };
+
+      // Send order to the API endpoint
+      const response = await fetch("/api/orders", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(orderPayload),
+      });
+
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Failed to place order");
+
+      setShowOrderConfirmation(true);
+      toast.success("Order placed successfully!");
+    } catch (error) {
+      toast.error(error.message || "Failed to place order");
+      console.error("Order submission error:", error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // Order Confirmation Modal
@@ -141,12 +207,12 @@ const OrderPage = () => {
           <p className="text-sm">
             Your order for <strong>₹{total.toFixed(2)}</strong> has been placed successfully.
           </p>
-          {selectedPayment === 'upi' && (
+          {selectedPayment === "upi" && (
             <p className="text-sm text-yellow-600">
               Please complete your payment using the UPI QR code.
             </p>
           )}
-          {selectedPayment === 'cod' && (
+          {selectedPayment === "cod" && (
             <p className="text-sm text-green-600">
               Payment will be collected when your order is delivered.
             </p>
@@ -158,6 +224,60 @@ const OrderPage = () => {
         >
           Close
         </button>
+      </div>
+    </div>
+  );
+
+  // UPI QR Modal
+  const UpiQrModal = () => (
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in">
+      <div className="bg-white rounded-xl p-8 max-w-md w-full shadow-2xl transform transition-all animate-scale-in">
+        {/* Modal Header */}
+        <div className="text-center mb-6">
+          <h3 className="text-2xl font-bold text-gray-900 mb-2">Scan to Pay</h3>
+          <p className="text-gray-600">
+            Total Amount:
+            <span className="ml-2 font-semibold text-green-600">₹{total.toFixed(2)}</span>
+          </p>
+        </div>
+
+        {/* QR Code Section */}
+        <div className="relative group">
+          <div className="absolute inset-0 bg-gradient-to-r from-green-100 to-blue-100 rounded-xl transform rotate-1 opacity-30 group-hover:opacity-50 transition-opacity"></div>
+          <div className="relative bg-white p-6 rounded-xl border border-gray-100">
+            <div className="flex flex-col items-center">
+              <div className="mb-4 relative">
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="animate-pulse w-32 h-32 bg-gray-100 rounded-lg"></div>
+                </div>
+                <img
+                  src={generateQrCodeUrl()}
+                  alt="UPI QR Code"
+                  className="w-48 h-48 object-contain rounded-lg transform transition-transform hover:scale-105"
+                  loading="eager"
+                />
+              </div>
+              <div className="text-center">
+                <p className="text-sm font-medium text-gray-700 mb-1">
+                  Scan QR Code
+                </p>
+                <p className="text-xs text-gray-500">
+                  Use any UPI app to complete payment
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Action Buttons */}
+        <div className="mt-8 flex flex-col gap-3">
+          <button
+            onClick={() => setShowUpiQrModal(false)} // Only close the modal
+            className="w-full bg-gray-900 text-white py-3 rounded-lg hover:bg-gray-800 transition-colors font-medium"
+          >
+            Close
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -180,6 +300,9 @@ const OrderPage = () => {
 
       {/* Order Confirmation Modal */}
       {showOrderConfirmation && <OrderConfirmationModal />}
+
+      {/* UPI QR Modal */}
+      {showUpiQrModal && <UpiQrModal />}
 
       {/* Header Section */}
       <div className="mb-2">
@@ -224,7 +347,7 @@ const OrderPage = () => {
             <div className="flex justify-between items-center mb-3">
               <h2 className="text-sm font-semibold">Select Address</h2>
               <button
-                onClick={() => setEditAddressId('new')}
+                onClick={() => setEditAddressId("new")}
                 className="flex items-center text-sm text-blue-600 hover:text-blue-700"
               >
                 <MdAdd className="mr-1" /> Add Address
@@ -291,37 +414,18 @@ const OrderPage = () => {
             <h2 className="text-sm font-semibold mb-2">Payment Method</h2>
             <div className="bg-white border border-gray-200 rounded-lg p-4">
               <div className="space-y-3">
-                {/* Payment Options */}
-                <div className="relative opacity-50 cursor-not-allowed">
-                  <div className="flex items-center p-3 rounded-md border border-gray-100 bg-gray-50">
-                    <div className="flex items-center space-x-3 w-full">
-                      <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center">
-                        <FaCreditCard className="w-4 h-4 text-blue-600" />
-                      </div>
-                      <span className="font-medium text-sm text-gray-700 line-through">Credit Card</span>
-                    </div>
-                    <span className="text-xs text-red-500 ml-auto px-2 py-1 bg-red-50 rounded">Unavailable</span>
-                  </div>
-                </div>
-                <div className="relative opacity-50 cursor-not-allowed">
-                  <div className="flex items-center p-3 rounded-md border border-gray-100 bg-gray-50">
-                    <div className="flex items-center space-x-3 w-full">
-                      <div className="w-6 h-6 bg-purple-100 rounded-full flex items-center justify-center">
-                        <FaRegCreditCard className="w-4 h-4 text-purple-600" />
-                      </div>
-                      <span className="font-medium text-sm text-gray-700 line-through">Debit Card</span>
-                    </div>
-                    <span className="text-xs text-red-500 ml-auto px-2 py-1 bg-red-50 rounded">Unavailable</span>
-                  </div>
-                </div>
+                {/* UPI Payment Option */}
                 <label className="group flex items-center p-3 rounded-md border border-green-100 bg-white hover:border-green-200 transition-colors cursor-pointer">
                   <input
                     type="radio"
                     name="payment"
                     value="upi"
                     className="sr-only"
-                    onChange={() => setSelectedPayment('upi')}
-                    checked={selectedPayment === 'upi'}
+                    onChange={() => {
+                      setSelectedPayment("upi"); // Set payment method to UPI
+                      setShowUpiQrModal(true);   // Open the UPI QR modal
+                    }}
+                    checked={selectedPayment === "upi"}
                   />
                   <div className="flex items-center space-x-3 w-full">
                     <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center">
@@ -336,14 +440,16 @@ const OrderPage = () => {
                     <FaChevronRight className="w-4 h-4 text-green-500 opacity-0 group-hover:opacity-100 transition-opacity" />
                   </div>
                 </label>
+
+                {/* COD Payment Option */}
                 <label className="group flex items-center p-3 rounded-md border border-orange-100 bg-white hover:border-orange-200 transition-colors cursor-pointer">
                   <input
                     type="radio"
                     name="payment"
                     value="cod"
                     className="sr-only"
-                    onChange={() => setSelectedPayment('cod')}
-                    checked={selectedPayment === 'cod'}
+                    onChange={() => setSelectedPayment("cod")}
+                    checked={selectedPayment === "cod"}
                   />
                   <div className="flex items-center space-x-3 w-full">
                     <div className="w-6 h-6 bg-orange-100 rounded-full flex items-center justify-center">
@@ -359,25 +465,6 @@ const OrderPage = () => {
                   </div>
                 </label>
               </div>
-
-              {/* UPI QR Code Display */}
-              {selectedPayment === 'upi' && (
-                <div className="mt-4 p-4 border-t border-gray-100">
-                  <div className="flex flex-col items-center">
-                    <p className="text-sm font-medium mb-3">
-                      Scan this QR code using any UPI app to pay ₹{total.toFixed(2)}
-                    </p>
-                    <img
-                      src={generateUpiUrl()}
-                      alt="UPI QR Code"
-                      className="w-48 h-48 object-contain border border-gray-200 rounded-lg"
-                    />
-                    <p className="text-xs text-gray-500 mt-3 text-center">
-                      Note: Refresh the page if you've already made the payment
-                    </p>
-                  </div>
-                </div>
-              )}
             </div>
           </div>
         </div>
@@ -401,8 +488,7 @@ const OrderPage = () => {
               </div>
               <button
                 onClick={handlePlaceOrder}
-                
-                disabled={!selectedAddress || !selectedPayment}
+                disabled={!selectedAddress || !selectedPayment || isLoading}
                 className="w-full bg-green-500 text-white py-3 rounded-lg hover:bg-green-600 transition disabled:bg-gray-300 disabled:cursor-not-allowed"
               >
                 Place your order

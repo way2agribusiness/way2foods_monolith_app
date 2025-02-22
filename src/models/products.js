@@ -1,35 +1,32 @@
 import mongoose from "mongoose";
-import slugify from "slugify"; // Import slugify
+import slugify from "slugify";
 
 const { Schema } = mongoose;
-
-// Map to store slug history (it would reset after a restart, but it's okay for now)
-const slugMap = new Map();
 
 const productSchema = new Schema({
     title: {
         type: String,
-        required: true
+        required: true,
     },
     slug: {
         type: String,
-        unique: true,  // Ensure the slug is unique
+        unique: true,
     },
     image: {
-        type: [String], // Array of image URLs from Cloudinary
+        type: [String],
         required: true,
     },
     price: {
         type: Number,
-        required: true
+        required: true,
     },
     cuttedPrice: {
         type: Number,
-        required: true
+        required: true,
     },
     quantity: {
-        type: String,
-        required: true
+        type: Number, // Changed from String to Number for inventory management
+        required: true,
     },
     specifications: [
         {
@@ -45,76 +42,72 @@ const productSchema = new Schema({
     ],
     isActive: {
         type: Boolean,
-        default: false
+        default: false,
     },
     isApproved: {
         type: Boolean,
-        default: false
+        default: false,
     },
     brand: {
         type: Schema.Types.ObjectId,
-        ref: 'Brand'
+        ref: "Brand",
     },
     categoryID: {
         type: Schema.Types.ObjectId,
-        ref: 'Category'
+        ref: "Category",
     },
     subCategoryID: {
         type: Schema.Types.ObjectId,
-        ref: 'Subcategory'
+        ref: "Subcategory",
     },
     sellerID: {
         type: Schema.Types.ObjectId,
-        ref: 'User'
+        ref: "User",
+        required: true, // Ensure sellerID is always present
     },
     rolename: {
         type: String,
         required: true,
-    }
+    },
 }, { timestamps: true });
 
-// Function to generate the next alphabetical prefix (e.g., ab, bc, cd, ...)
+// Slug generation logic (unchanged)
+const slugMap = new Map();
+
 const getNextPrefix = (lastPrefix) => {
-    if (!lastPrefix) return 'ab'; // Start with 'ab'
-
-    let arr = lastPrefix.split('');
+    if (!lastPrefix) return "ab";
+    let arr = lastPrefix.split("");
     let lastChar = arr.pop();
-
-    if (lastChar === 'z') {
+    if (lastChar === "z") {
         arr[arr.length - 1] = String.fromCharCode(arr[arr.length - 1].charCodeAt(0) + 1);
-        arr.push('a');
+        arr.push("a");
     } else {
         arr.push(String.fromCharCode(lastChar.charCodeAt(0) + 1));
     }
-
-    return arr.join('');
+    return arr.join("");
 };
 
-// Function to generate a unique slug
-async function generateUniqueSlug(title) {
+const generateUniqueSlug = async (title) => {
     let formattedTitle = slugify(title, { lower: true, strict: true });
-
     if (slugMap.has(formattedTitle)) {
         let lastPrefix = slugMap.get(formattedTitle);
         let newPrefix = getNextPrefix(lastPrefix);
-        slugMap.set(formattedTitle, newPrefix); // Update to the next prefix
+        slugMap.set(formattedTitle, newPrefix);
         return `${newPrefix}-${formattedTitle}`;
     } else {
-        slugMap.set(formattedTitle, 'ab'); // Start with 'ab' for the first time
+        slugMap.set(formattedTitle, "ab");
         return `ab-${formattedTitle}`;
     }
-}
+};
 
-// Before saving, create a slug based on the title
-productSchema.pre('save', async function (next) {
+productSchema.pre("save", async function (next) {
     if (this.isNew && this.title) {
         this.slug = await generateUniqueSlug(this.title);
     }
     next();
 });
 
-// Add a hook to update the slug if the title changes (on updates)
-productSchema.pre('findOneAndUpdate', async function (next) {
+productSchema.pre("findOneAndUpdate", async function (next) {
     const updatedTitle = this._update.title;
     if (updatedTitle) {
         this._update.slug = await generateUniqueSlug(updatedTitle);
@@ -122,8 +115,4 @@ productSchema.pre('findOneAndUpdate', async function (next) {
     next();
 });
 
-const Product = mongoose.models.Product || mongoose.model('Product', productSchema);
-
-export default Product;
-
-
+export default mongoose.models.Product || mongoose.model("Product", productSchema);
