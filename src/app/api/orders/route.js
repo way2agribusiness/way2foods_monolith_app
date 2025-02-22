@@ -1,16 +1,19 @@
 import { NextResponse } from "next/server";
-import Order from "@/models/Order";
+import Order from "@/models/order";
 import Product from "@/models/products";
-import ConnectedDB from "@/config/db";
+import connectDB from "@/utils/connectDB";
+import { getToken } from "next-auth/jest";
 
 export async function POST(req) {
     try {
-        // Connect to MongoDB
-        await ConnectedDB();
+        await connectDB();
+        const token = await getToken({ req });
 
-        // Parse the request body
+        if (!token) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+
         const body = await req.json();
-        console.log("Request Body:", body);
 
         // Validate required fields
         const requiredFields = [
@@ -28,13 +31,19 @@ export async function POST(req) {
             );
         }
 
-        // Validate products
+        // Validate products and sellers
         for (const item of body.products) {
-            const product = await Product.findById(item.product);
+            const product = await Product.findById(item.product).populate("sellerID", "_id");
             if (!product) {
                 return NextResponse.json(
                     { error: `Product ${item.product} not found` },
                     { status: 404 }
+                );
+            }
+            if (product.sellerID._id.toString() !== item.seller.toString()) {
+                return NextResponse.json(
+                    { error: `Seller mismatch for product ${item.product}` },
+                    { status: 400 }
                 );
             }
             if (product.quantity < item.quantity) {
@@ -46,7 +55,11 @@ export async function POST(req) {
         }
 
         // Create order
-        const order = new Order(body);
+        const order = new Order({
+            user: token.userId,
+            ...body,
+        });
+
         await order.save();
 
         // Update product quantities
@@ -63,7 +76,6 @@ export async function POST(req) {
             message: "Order placed successfully",
         });
     } catch (error) {
-        console.error("Order submission error:", error);
         return NextResponse.json(
             { error: error.message || "Server error" },
             { status: 500 }
