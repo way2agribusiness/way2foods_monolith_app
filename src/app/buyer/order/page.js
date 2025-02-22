@@ -23,7 +23,12 @@ const OrderPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState(null);
   const [showOrderConfirmation, setShowOrderConfirmation] = useState(false);
+<<<<<<< HEAD
   const [showUpiQrModal, setShowUpiQrModal] = useState(false); // New state for UPI QR modal
+=======
+  const [orderId, setOrderId] = useState(null);
+  const [isPlacingOrder, setIsPlacingOrder] = useState(false);
+>>>>>>> 3f13125cb3f866bba8c88ae8222d5e4d077141f1
 
   // Redirect to login if user is not logged in
   useEffect(() => {
@@ -40,7 +45,6 @@ const OrderPage = () => {
         let items = [];
 
         if (user) {
-          // Fetch from API for authenticated users
           const token = localStorage.getItem("token");
           if (!token) return;
 
@@ -62,7 +66,6 @@ const OrderPage = () => {
             })) || [];
           }
         } else {
-          // Fetch from sessionStorage for guests
           const sessionItems = JSON.parse(
             sessionStorage.getItem("productItem") || "[]"
           );
@@ -138,12 +141,16 @@ const OrderPage = () => {
     setShowUpiQrModal(true); // Show UPI QR modal
   };
 
+<<<<<<< HEAD
   // Handle place order
+=======
+>>>>>>> 3f13125cb3f866bba8c88ae8222d5e4d077141f1
   const handlePlaceOrder = async () => {
     if (!selectedAddress || !selectedPayment) {
       toast.error("Please select address and payment method");
       return;
     }
+<<<<<<< HEAD
 
     setIsLoading(true);
     try {
@@ -197,7 +204,51 @@ const OrderPage = () => {
       setIsLoading(false);
     }
   };
+=======
+>>>>>>> 3f13125cb3f866bba8c88ae8222d5e4d077141f1
 
+    setIsLoading(true);
+
+    try {
+      const token = localStorage.getItem("token");
+      const orderData = {
+        address: selectedAddress,
+        paymentMethod: selectedPayment,
+        items: cartItems.map(item => ({
+          product: item.id,
+          quantity: item.quantity,
+          price: item.price
+        })),
+        totalAmount: total
+      };
+
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/user/orders`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify(orderData)
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) throw new Error(data.message || 'Order failed');
+
+      // Update user context with cleared cart
+      setUser(data.user);
+      setCartItems([]);
+      setOrderId(data.orderId); // Set the order ID for confirmation modal
+
+      toast.success('Order placed successfully!');
+      setShowOrderConfirmation(true);
+
+    } catch (error) {
+      toast.error(error.message || 'Failed to place order');
+    } finally {
+      setIsLoading(false);
+    }
+  };
   // Order Confirmation Modal
   const OrderConfirmationModal = () => (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 animate-fade-in">
@@ -205,7 +256,7 @@ const OrderPage = () => {
         <h3 className="text-lg font-bold mb-4">Order Confirmed! 🎉</h3>
         <div className="space-y-2">
           <p className="text-sm">
-            Your order for <strong>₹{total.toFixed(2)}</strong> has been placed successfully.
+            Your order <strong>#{orderId}</strong> for <strong>₹{total.toFixed(2)}</strong> has been placed successfully.
           </p>
           {selectedPayment === "upi" && (
             <p className="text-sm text-yellow-600">
@@ -491,7 +542,7 @@ const OrderPage = () => {
                 disabled={!selectedAddress || !selectedPayment || isLoading}
                 className="w-full bg-green-500 text-white py-3 rounded-lg hover:bg-green-600 transition disabled:bg-gray-300 disabled:cursor-not-allowed"
               >
-                Place your order
+                {isLoading ? 'Placing Order...' : 'Place your order'}
               </button>
             </div>
           </div>
