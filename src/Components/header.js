@@ -281,7 +281,7 @@ const Headers = () => {
                         </li>
                         <li className="max-lg:border-b max-lg:py-3 px-3">
                             <a
-                                href="/"
+                                href="/w2f/aboutus"
                                 className="hover:text-yellow-300 text-white   block"
                             >
                                 About us
@@ -289,7 +289,7 @@ const Headers = () => {
                         </li>
                         <li className="max-lg:border-b max-lg:py-3 px-3">
                             <a
-                                href="/"
+                                href="/w2f/contactus"
                                 className="hover:text-yellow-300 text-white   block"
                             >
                                 Contact us
