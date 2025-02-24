@@ -1,29 +1,13 @@
 import Product from "@/models/products";
-import User from "@/models/user";
-import authMiddleware from '@/middlewares/authMiddleware';
 import ConnectedDB from "@/config/db";
-import Cart from "@/models/cart"; // Ensure the Cart model is correctly imported
-import Order from "@/models/Order"; // Ensure the Order model is correctly imported
-import { NextResponse } from "next/server"; // For Next.js API response handling
 
 export const POST = async (request) => {
     try {
-        // Step 1: Connect to the database
+        // Connect to MongoDB
         await ConnectedDB();
 
-        // Step 2: Handle authentication (get the user from token)
-        authMiddleware(request); // Validate and extract user data from token
-
-        const userId = request.user.id; // Extract user ID (this assumes authentication middleware has been applied)
-
-        // Step 3: Check if the user exists
-        const user = await User.findById(userId);
-        if (!user) {
-            return NextResponse.json({ message: 'Unauthorized access' }, { status: 404 });
-        }
-
-        // Step 4: Parse the request body to get the order details
-        const body = await request.json(); // Parse the body to JSON
+        // Parse the request body
+        const body = await req.json();
         console.log("Request Body:", body);
 
         // Validate required fields
@@ -42,13 +26,19 @@ export const POST = async (request) => {
             );
         }
 
-        // Step 5: Validate products
+        // Validate products
         for (const item of body.products) {
-            const product = await Product.findById(item.product);
+            const product = await Product.findById(item.product).populate("sellerID", "_id");
             if (!product) {
                 return NextResponse.json(
                     { error: `Product ${item.product} not found` },
                     { status: 404 }
+                );
+            }
+            if (product.sellerID._id.toString() !== item.seller.toString()) {
+                return NextResponse.json(
+                    { error: `Seller mismatch for product ${item.product}` },
+                    { status: 400 }
                 );
             }
             if (product.quantity < item.quantity) {
@@ -59,13 +49,8 @@ export const POST = async (request) => {
             }
         }
 
-        // Step 6: Create order with user ID
-        const orderData = {
-            ...body,
-            user: userId, // Add the authenticated user's ID to the order
-        };
-
-        const order = new Order(orderData);
+        // Create order
+        const order = new Order(body);
         await order.save();
 
         // Step 7: Update product quantities
@@ -89,7 +74,6 @@ export const POST = async (request) => {
             message: "Order placed successfully",
         });
     } catch (error) {
-        console.error("Order submission error:", error);
         return NextResponse.json(
             { error: error.message || "Server error" },
             { status: 500 }

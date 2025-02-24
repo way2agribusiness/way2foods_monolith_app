@@ -272,7 +272,7 @@ const OrderPage = () => {
         {/* Action Buttons */}
         <div className="mt-8 flex flex-col gap-3">
           <button
-            onClick={() => setShowUpiQrModal(false)} // Only close the modal
+            onClick={() => setShowUpiQrModal(false)}
             className="w-full bg-gray-900 text-white py-3 rounded-lg hover:bg-gray-800 transition-colors font-medium"
           >
             Close
@@ -510,4 +510,4 @@ const OrderPage = () => {
   );
 };
 
-export default OrderPage;
+export default OrderPage; 
