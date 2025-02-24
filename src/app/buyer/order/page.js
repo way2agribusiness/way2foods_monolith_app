@@ -415,16 +415,16 @@ const OrderPage = () => {
             <div className="bg-white border border-gray-200 rounded-lg p-4">
               <div className="space-y-3">
                 {/* UPI Payment Option */}
-                <label className="group flex items-center p-3 rounded-md border border-green-100 bg-white hover:border-green-200 transition-colors cursor-pointer">
+                <label
+                  className="group flex items-center p-3 rounded-md border border-green-100 bg-white hover:border-green-200 transition-colors cursor-pointer"
+                  onClick={() => setShowUpiQrModal(true)} // Add this click handler
+                >
                   <input
                     type="radio"
                     name="payment"
                     value="upi"
                     className="sr-only"
-                    onChange={() => {
-                      setSelectedPayment("upi"); // Set payment method to UPI
-                      setShowUpiQrModal(true);   // Open the UPI QR modal
-                    }}
+                    onChange={() => setSelectedPayment("upi")}
                     checked={selectedPayment === "upi"}
                   />
                   <div className="flex items-center space-x-3 w-full">

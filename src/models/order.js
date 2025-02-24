@@ -35,10 +35,6 @@ const orderSchema = new mongoose.Schema({
         type: String,
         required: true,
     },
-    status: {
-        type: String,
-        default: "Pending",
-    },
 }, { timestamps: true });
 
 export default mongoose.models.Order || mongoose.model("Order", orderSchema);
